@@ -1,0 +1,76 @@
+
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  bucketName:
+    Type: String
+    Default: sensei0992002
+  viewerProtocolPolicy:
+    Type: String
+    Default: allow-all
+  targetOriginId:
+    Type: String
+    Default: S3Origin
+Resources:
+  # S3 Bucket
+  AnmolS3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      AccessControl: BucketOwnerFullControl
+      BucketName: !Ref bucketName
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: ObjectWriter
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  # S3 Bucket Policy
+  AnmolBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref AnmolS3Bucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action: "s3:*"
+            Effect: Allow
+            Principal: "*"
+            Resource: "arn:aws:s3:::sensei0992002/*"
+          - Sid: AllowCloudFrontServicePrincipalReadOnly
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+
+  # CloudFront Distribution
+  CloudFrontDistribution:
+    Type: 'AWS::CloudFront::Distribution'
+    Properties:
+      DistributionConfig:
+        Origins:
+          - DomainName: !GetAtt AnmolS3Bucket.DomainName
+            Id: !Ref targetOriginId
+            S3OriginConfig: {}
+        Enabled: true
+        DefaultCacheBehavior:
+          TargetOriginId: !Ref targetOriginId
+          ViewerProtocolPolicy: !Ref viewerProtocolPolicy
+        
+          AllowedMethods:
+            - GET
+            - HEAD
+          CachedMethods:
+            - GET
+            - HEAD
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+        DefaultRootObject: index.html
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
