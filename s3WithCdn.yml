@@ -1,4 +1,3 @@
-
 AWSTemplateFormatVersion: '2010-09-09'
 Parameters:
   bucketName:
@@ -37,14 +36,17 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Action: "s3:*"
+          - Sid: PublicReadForGetBucketObjects
             Effect: Allow
             Principal: "*"
+            Action: "s3:GetObject"
             Resource: "arn:aws:s3:::sensei0992002/*"
           - Sid: AllowCloudFrontServicePrincipalReadOnly
             Effect: Allow
             Principal:
               Service: cloudfront.amazonaws.com
+            Action: "s3:GetObject"
+            Resource: "arn:aws:s3:::sensei0992002/*"
 
   # CloudFront Distribution
   CloudFrontDistribution:
@@ -59,7 +61,6 @@ Resources:
         DefaultCacheBehavior:
           TargetOriginId: !Ref targetOriginId
           ViewerProtocolPolicy: !Ref viewerProtocolPolicy
-        
           AllowedMethods:
             - GET
             - HEAD
