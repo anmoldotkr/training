@@ -34,13 +34,13 @@ Resources:
             Effect: Deny
             Principal: "*"
             Action: "s3:GetObject"
-            Resource: "arn:aws:s3:::sensei0992002/*"
+            Resource: "arn:aws:s3:::${bucketName}/*"
           - Sid: AllowCloudFrontServicePrincipalReadOnly
             Effect: Allow
             Principal:
               Service: cloudfront.amazonaws.com
             Action: "s3:GetObject"
-            Resource: "arn:aws:s3:::sensei0992002/*"
+            Resource: "arn:aws:s3:::${bucketName}/*"
 
   # CloudFront Distribution
   CloudFrontDistribution:
