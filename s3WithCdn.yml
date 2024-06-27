@@ -29,17 +29,18 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
+          - Sid: AllowCloudFrontServicePrincipalReadOnly
+            Effect: Allow
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+            Action: "s3:GetObject"
+            Resource: !Sub "arn:aws:s3:::${bucketName}/*"
           - Sid: DenyDirectPublicAccess
             Effect: Deny
             Principal: "*"
             Action: "s3:GetObject"
-            Resource: "arn:aws:s3:::${bucketName}/*"
-          - Sid: AllowCloudFrontServicePrincipalReadOnly
-            Effect: Allow
-            Principal:
-              Service: cloudfront.amazonaws.com
-            Action: "s3:GetObject"
-            Resource: "arn:aws:s3:::${bucketName}/*"
+            Resource: !Sub "arn:aws:s3:::${bucketName}/*"
+          
 
   # CloudFront Origin Access Identity
   CloudFrontOriginAccessIdentity:
