@@ -10,7 +10,6 @@ pipeline {
     }
 
     stages {
-       
         stage('upload to s3') {
             steps {
                 withCredentials([[
@@ -19,7 +18,7 @@ pipeline {
                     accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                     secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                 ]]) {
-                    sh "aws s3 cp ./ s3://${params.BUCKET_NAME}/"
+                    sh "aws s3 cp ./ s3://${params.BUCKET_NAME}/ --recursive"
                 }
             }
         }
@@ -27,10 +26,13 @@ pipeline {
     
     post {
         success {
-            echo 'CloudFormation stack creation/update was successful!'
+            echo 'Files were successfully uploaded to S3!'
         }
         failure {
-            echo 'CloudFormation stack creation/update failed.'
+            echo 'Failed to upload files to S3.'
+        }
+        always {
+            cleanWs()
         }
     }
 }
