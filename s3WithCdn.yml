@@ -2,7 +2,6 @@ AWSTemplateFormatVersion: '2010-09-09'
 Parameters:
   bucketName:
     Type: String
-
 Resources:
   # S3 Bucket
   S3Bucket:
@@ -41,6 +40,13 @@ Resources:
               Service: cloudfront.amazonaws.com
             Action: "s3:GetObject"
             Resource: "arn:aws:s3:::${bucketName}/*"
+
+  # CloudFront Origin Access Identity
+  CloudFrontOriginAccessIdentity:
+    Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity'
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub "Access identity for ${bucketName}"
 
   # CloudFront Distribution
   CloudFrontDistribution:
