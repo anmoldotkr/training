@@ -6,8 +6,8 @@ pipeline {
     }
 
     parameters {
-        string(name: 'STACK_NAME', defaultValue: 'testing-s3withcdn-1', description: 'Enter your stack name')
-        string(name: 'REGION_NAME', defaultValue: 'us-east-1', description: 'Enter Region (ex: us-east-1, us-west-2)')        
+        string(name: 'STACK_NAME', description: 'Enter your stack name')
+        string(name: 'REGION_NAME', description: 'Enter Region (ex: us-east-1, us-west-2)')        
     }
 
     stages {
@@ -20,7 +20,7 @@ pipeline {
                     accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                     secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                 ]]) {
-                    sh "aws s3 cp ./ s3://${params.BUCKET_NAME}/ --recursive"
+                    sh "aws s3 cp ./ s3://${params.BUCKET_NAME}/"
                 }
             }
         }
