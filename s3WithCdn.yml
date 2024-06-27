@@ -2,20 +2,14 @@ AWSTemplateFormatVersion: '2010-09-09'
 Parameters:
   bucketName:
     Type: String
-    Default: sensei0992002
-  viewerProtocolPolicy:
-    Type: String
-    Default: allow-all
-  targetOriginId:
-    Type: String
-    Default: S3Origin
+
 Resources:
   # S3 Bucket
-  AnmolS3Bucket:
+  S3Bucket:
     Type: 'AWS::S3::Bucket'
     Properties:
       AccessControl: BucketOwnerFullControl
-      BucketName: !Ref bucketName
+      BucketName: !Sub ${bucketName}
       WebsiteConfiguration:
         IndexDocument: index.html
         ErrorDocument: error.html
@@ -23,30 +17,30 @@ Resources:
         Rules:
           - ObjectOwnership: ObjectWriter
       PublicAccessBlockConfiguration:
-        BlockPublicAcls: false
-        BlockPublicPolicy: false
-        IgnorePublicAcls: false
-        RestrictPublicBuckets: false
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
 
   # S3 Bucket Policy
-  AnmolBucketPolicy:
+  BucketPolicy:
     Type: 'AWS::S3::BucketPolicy'
     Properties:
-      Bucket: !Ref AnmolS3Bucket
+      Bucket: !Ref S3Bucket
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Sid: PublicReadForGetBucketObjects
-            Effect: Allow
+          - Sid: DenyDirectPublicAccess
+            Effect: Deny
             Principal: "*"
             Action: "s3:GetObject"
-            Resource: "arn:aws:s3:::${bucketName}/*"
+            Resource: "arn:aws:s3:::sensei0992002/*"
           - Sid: AllowCloudFrontServicePrincipalReadOnly
             Effect: Allow
             Principal:
               Service: cloudfront.amazonaws.com
             Action: "s3:GetObject"
-            Resource: "arn:aws:s3:::${bucketName}/*"
+            Resource: "arn:aws:s3:::sensei0992002/*"
 
   # CloudFront Distribution
   CloudFrontDistribution:
@@ -54,13 +48,14 @@ Resources:
     Properties:
       DistributionConfig:
         Origins:
-          - DomainName: !GetAtt AnmolS3Bucket.DomainName
-            Id: !Ref targetOriginId
-            S3OriginConfig: {}
+          - DomainName: !GetAtt S3Bucket.DomainName
+            Id: S3Origin
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
         Enabled: true
         DefaultCacheBehavior:
-          TargetOriginId: !Ref targetOriginId
-          ViewerProtocolPolicy: !Ref viewerProtocolPolicy
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
           AllowedMethods:
             - GET
             - HEAD
@@ -72,6 +67,5 @@ Resources:
             Cookies:
               Forward: none
         DefaultRootObject: index.html
-        PriceClass: PriceClass_100
         ViewerCertificate:
           CloudFrontDefaultCertificate: true
