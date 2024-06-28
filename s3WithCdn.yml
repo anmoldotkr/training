@@ -122,9 +122,9 @@ Resources:
     Properties:
       OriginAccessControlConfig:
         Name: !Sub "${bucketName}-OAC"
-        OriginAccessControlType: 's3'
-        SigningBehavior: 'always'
-        SigningProtocol: 'sigv4'
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
 
   # CloudFront Distribution
   CloudFrontDistribution:
