@@ -1,83 +1,3 @@
-# AWSTemplateFormatVersion: '2010-09-09'
-# Parameters:
-#   bucketName:
-#     Type: String
-# Resources:
-#   # S3 Bucket
-#   S3Bucket:
-#     Type: 'AWS::S3::Bucket'
-#     Properties:
-#       AccessControl: BucketOwnerFullControl
-#       BucketName: !Sub ${bucketName}
-#       WebsiteConfiguration:
-#         IndexDocument: index.html
-#         ErrorDocument: error.html
-#       OwnershipControls:
-#         Rules:
-#           - ObjectOwnership: ObjectWriter
-#       PublicAccessBlockConfiguration:
-#         BlockPublicAcls: true
-#         BlockPublicPolicy: true
-#         IgnorePublicAcls: true
-#         RestrictPublicBuckets: true
-
-#   # S3 Bucket Policy
-#   BucketPolicy:
-#     Type: 'AWS::S3::BucketPolicy'
-#     Properties:
-#       Bucket: !Ref S3Bucket
-#       PolicyDocument:
-#         Version: '2012-10-17'
-#         Statement:
-#           - Sid: AllowCloudFrontServicePrincipalReadOnly
-#             Effect: Allow
-#             Principal:
-#               CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
-#             Action: "s3:GetObject"
-#             Resource: !Sub "arn:aws:s3:::${bucketName}/*"
-#           - Sid: DenyDirectPublicAccess
-#             Effect: Deny
-#             Principal: "*"
-#             Action: "s3:GetObject"
-#             Resource: !Sub "arn:aws:s3:::${bucketName}/*"
-          
-
-#   # CloudFront Origin Access Identity
-#   CloudFrontOriginAccessIdentity:
-#     Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity'
-#     Properties:
-#       CloudFrontOriginAccessIdentityConfig:
-#         Comment: !Sub "Access identity for ${bucketName}"
-
-#   # CloudFront Distribution
-#   CloudFrontDistribution:
-#     Type: 'AWS::CloudFront::Distribution'
-#     Properties:
-#       DistributionConfig:
-#         Origins:
-#           - DomainName: !GetAtt S3Bucket.DomainName
-#             Id: S3Origin
-#             S3OriginConfig:
-#               OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
-#         Enabled: true
-#         DefaultCacheBehavior:
-#           TargetOriginId: S3Origin
-#           ViewerProtocolPolicy: redirect-to-https
-#           AllowedMethods:
-#             - GET
-#             - HEAD
-#           CachedMethods:
-#             - GET
-#             - HEAD
-#           ForwardedValues:
-#             QueryString: false
-#             Cookies:
-#               Forward: none
-#         DefaultRootObject: index.html
-#         ViewerCertificate:
-#           CloudFrontDefaultCertificate: true
-
-# ---------------------------------------------------
 AWSTemplateFormatVersion: '2010-09-09'
 Parameters:
   bucketName:
@@ -89,7 +9,7 @@ Resources:
     Type: 'AWS::S3::Bucket'
     Properties:
       AccessControl: BucketOwnerFullControl
-      BucketName: !Sub ${bucketName}
+      BucketName: !Ref bucketName
       WebsiteConfiguration:
         IndexDocument: index.html
         ErrorDocument: error.html
@@ -118,18 +38,15 @@ Resources:
             Resource: !Sub "arn:aws:s3:::${bucketName}/*"
             Condition:
               StringEquals:
-                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistributionId}"
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
+                # Use ${CloudFrontDistribution} directly here
 
   # CloudFront Origin Access Control
   CloudFrontOriginAccessControl:
-    Type: AWS::CloudFront::OriginAccessControl
+    Type: AWS::CloudFront::OriginAccessIdentity
     Properties:
-      OriginAccessControlConfig:
-        Description: !Sub "Access control for ${bucketName}"
-        Name: !Sub "OAC-${bucketName}"
-        OriginAccessControlOriginType: "s3"
-        SigningBehavior: "always"
-        SigningProtocol: "sigv4"
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub "Access control for ${bucketName}"
 
   # CloudFront Distribution
   CloudFrontDistribution:
@@ -139,8 +56,8 @@ Resources:
         Origins:
           - DomainName: !GetAtt S3Bucket.DomainName
             Id: S3Origin
-            S3OriginConfig: {}
-            OriginAccessControlId: !Ref CloudFrontOriginAccessControl
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessControl}"
         Enabled: true
         DefaultCacheBehavior:
           TargetOriginId: S3Origin
@@ -164,18 +81,3 @@ Outputs:
     Value: !Ref CloudFrontDistribution
     Export:
       Name: !Sub "${AWS::StackName}-DistributionId"
-
-
-# ---------------------
-# Version: "2008-10-17"
-# Id: "PolicyForCloudFrontPrivateContent"
-# Statement:
-#   - Sid: "AllowCloudFrontServicePrincipal"
-#     Effect: "Allow"
-#     Principal:
-#       Service: "cloudfront.amazonaws.com"
-#     Action: "s3:GetObject"
-#     Resource: "arn:aws:s3:::${bucketName}/*"
-#     Condition:
-#       StringEquals:
-#         AWS:SourceArn: "arn:aws:cloudfront::313686187887:distribution/ES9HFJ4W8X99R"
