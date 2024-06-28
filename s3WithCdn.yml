@@ -9,7 +9,7 @@ Resources:
     Type: 'AWS::S3::Bucket'
     Properties:
       AccessControl: BucketOwnerFullControl
-      BucketName: !Ref bucketName
+      BucketName: !Sub ${bucketName}
       WebsiteConfiguration:
         IndexDocument: index.html
         ErrorDocument: error.html
@@ -38,15 +38,19 @@ Resources:
             Resource: !Sub "arn:aws:s3:::${bucketName}/*"
             Condition:
               StringEquals:
-                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistributionId}"
                 # Use ${CloudFrontDistribution} directly here
 
   # CloudFront Origin Access Control
   CloudFrontOriginAccessControl:
-    Type: AWS::CloudFront::OriginAccessIdentity
+    Type: AWS::CloudFront::OriginAccessControl
     Properties:
-      CloudFrontOriginAccessIdentityConfig:
-        Comment: !Sub "Access control for ${bucketName}"
+      OriginAccessControlConfig:
+        Description: !Sub "Access control for ${bucketName}"
+        Name: !Sub "OAC-${bucketName}"
+        OriginAccessControlOriginType: "s3"
+        SigningBehavior: "always"
+        SigningProtocol: "sigv4"
 
   # CloudFront Distribution
   CloudFrontDistribution:
@@ -56,8 +60,8 @@ Resources:
         Origins:
           - DomainName: !GetAtt S3Bucket.DomainName
             Id: S3Origin
-            S3OriginConfig:
-              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessControl}"
+            S3OriginConfig: {}
+            OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessControl}"
         Enabled: true
         DefaultCacheBehavior:
           TargetOriginId: S3Origin
@@ -79,5 +83,18 @@ Resources:
 Outputs:
   CloudFrontDistributionId:
     Value: !Ref CloudFrontDistribution
-    Export:
-      Name: !Sub "${AWS::StackName}-DistributionId"
+
+
+# ---------------------
+# Version: "2008-10-17"
+# Id: "PolicyForCloudFrontPrivateContent"
+# Statement:
+#   - Sid: "AllowCloudFrontServicePrincipal"
+#     Effect: "Allow"
+#     Principal:
+#       Service: "cloudfront.amazonaws.com"
+#     Action: "s3:GetObject"
+#     Resource: "arn:aws:s3:::${bucketName}/*"
+#     Condition:
+#       StringEquals:
+#         AWS:SourceArn: "arn:aws:cloudfront::313686187887:distribution/ES9HFJ4W8X99R"
