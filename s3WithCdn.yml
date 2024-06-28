@@ -38,7 +38,7 @@ Resources:
             Resource: !Sub "arn:aws:s3:::${bucketName}/*"
             Condition:
               StringEquals:
-                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistributionId}"
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
 
   # CloudFront Origin Access Control
   CloudFrontOriginAccessControl:
@@ -59,8 +59,8 @@ Resources:
         Origins:
           - DomainName: !GetAtt S3Bucket.DomainName
             Id: S3Origin
-            S3OriginConfig:
-              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessControl}"
+            S3OriginConfig: {}
+            OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessControl}"
         Enabled: true
         DefaultCacheBehavior:
           TargetOriginId: S3Origin
@@ -82,5 +82,6 @@ Resources:
 Outputs:
   CloudFrontDistributionId:
     Value: !Ref CloudFrontDistribution
+
 
 
