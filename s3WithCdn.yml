@@ -110,28 +110,21 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Sid: AllowCloudFrontServicePrincipalReadOnly
-            Effect: Allow
-            Principal:
-              CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
-            Action: "s3:GetObject"
-            Resource: !Sub "arn:aws:s3:::${bucketName}/*"
           - Sid: DenyDirectPublicAccess
             Effect: Deny
             Principal: "*"
             Action: "s3:GetObject"
             Resource: !Sub "arn:aws:s3:::${bucketName}/*"
-            # Added Condition to ensure Deny applies only to direct access, not through CloudFront OAI
-            Condition:
-              StringNotEquals:
-                "aws:Referer": !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
 
-  # CloudFront Origin Access Identity
-  CloudFrontOriginAccessIdentity:
-    Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity'
+  # CloudFront Origin Access Control (OAC)
+  CloudFrontOriginAccessControl:
+    Type: 'AWS::CloudFront::OriginAccessControl'
     Properties:
-      CloudFrontOriginAccessIdentityConfig:
-        Comment: !Sub "Access identity for ${bucketName}"
+      OriginAccessControlConfig:
+        Name: !Sub "${bucketName}-OAC"
+        OriginAccessControlType: 's3'
+        SigningBehavior: 'always'
+        SigningProtocol: 'sigv4'
 
   # CloudFront Distribution
   CloudFrontDistribution:
@@ -142,8 +135,7 @@ Resources:
           - DomainName: !GetAtt S3Bucket.DomainName
             Id: S3Origin
             S3OriginConfig:
-              # Ensure the OriginAccessIdentity is correctly referenced
-              OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
+              OriginAccessControlId: !Ref CloudFrontOriginAccessControl
         Enabled: true
         DefaultCacheBehavior:
           TargetOriginId: S3Origin
@@ -163,7 +155,24 @@ Resources:
           CloudFrontDefaultCertificate: true
 
 Outputs:
-  CloudFrontDomainName:
-    Description: "The CloudFront distribution domain name"
-    # Added Outputs section to easily retrieve CloudFront domain name
-    Value: !GetAtt CloudFrontDistribution.DomainName
+  CloudFrontDistributionId:
+    Description: CloudFront Distribution ID
+    Value: !Ref CloudFrontDistribution
+
+
+
+
+
+# ---------------------
+# Version: "2008-10-17"
+# Id: "PolicyForCloudFrontPrivateContent"
+# Statement:
+#   - Sid: "AllowCloudFrontServicePrincipal"
+#     Effect: "Allow"
+#     Principal:
+#       Service: "cloudfront.amazonaws.com"
+#     Action: "s3:GetObject"
+#     Resource: "arn:aws:s3:::${bucketName}/*"
+#     Condition:
+#       StringEquals:
+#         AWS:SourceArn: "arn:aws:cloudfront::313686187887:distribution/ES9HFJ4W8X99R"
