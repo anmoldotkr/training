@@ -102,7 +102,7 @@ Resources:
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
 
-  # S3 Bucket Policy
+  # S3 Bucket Policy for CloudFront OAC
   BucketPolicy:
     Type: 'AWS::S3::BucketPolicy'
     Properties:
@@ -110,21 +110,26 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Sid: DenyDirectPublicAccess
-            Effect: Deny
-            Principal: "*"
+          - Sid: AllowCloudFrontServicePrincipalReadOnly
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
             Action: "s3:GetObject"
             Resource: !Sub "arn:aws:s3:::${bucketName}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistributionId}"
 
-  # CloudFront Origin Access Control (OAC)
+  # CloudFront Origin Access Control
   CloudFrontOriginAccessControl:
-    Type: 'AWS::CloudFront::OriginAccessControl'
+    Type: AWS::CloudFront::OriginAccessControl
     Properties:
       OriginAccessControlConfig:
-        Name: !Sub "${bucketName}-OAC"
-        OriginAccessControlOriginType: s3
-        SigningBehavior: always
-        SigningProtocol: sigv4
+        Description: !Sub "Access control for ${bucketName}"
+        Name: !Sub "OAC-${bucketName}"
+        OriginAccessControlOriginType: "s3"
+        SigningBehavior: "always"
+        SigningProtocol: "sigv4"
 
   # CloudFront Distribution
   CloudFrontDistribution:
@@ -134,8 +139,8 @@ Resources:
         Origins:
           - DomainName: !GetAtt S3Bucket.DomainName
             Id: S3Origin
-            S3OriginConfig:
-              OriginAccessControlId: !Ref CloudFrontOriginAccessControl
+            S3OriginConfig: {}
+            OriginAccessControlId: !Ref CloudFrontOriginAccessControl
         Enabled: true
         DefaultCacheBehavior:
           TargetOriginId: S3Origin
@@ -156,11 +161,9 @@ Resources:
 
 Outputs:
   CloudFrontDistributionId:
-    Description: CloudFront Distribution ID
     Value: !Ref CloudFrontDistribution
-
-
-
+    Export:
+      Name: !Sub "${AWS::StackName}-DistributionId"
 
 
 # ---------------------
