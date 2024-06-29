@@ -1,3 +1,5 @@
+# Private s3 bucket ----------------------------
+
 AWSTemplateFormatVersion: '2010-09-09'
 Parameters:
   bucketName:
@@ -30,7 +32,7 @@ Resources:
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
-          - Sid: AllowCloudFrontServicePrincipalReadOnly
+          - Sid: PolicyForCloudFrontPrivateContent
             Effect: Allow
             Principal:
               Service: cloudfront.amazonaws.com
@@ -60,7 +62,7 @@ Resources:
           - DomainName: !GetAtt S3Bucket.DomainName
             Id: S3Origin
             S3OriginConfig: {}
-            OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessControl}"
+            OriginAccessControlId: !Ref CloudFrontOriginAccessControl
         Enabled: true
         DefaultCacheBehavior:
           TargetOriginId: S3Origin
@@ -78,10 +80,3 @@ Resources:
         DefaultRootObject: index.html
         ViewerCertificate:
           CloudFrontDefaultCertificate: true
-
-Outputs:
-  CloudFrontDistributionId:
-    Value: !Ref CloudFrontDistribution
-
-
-
